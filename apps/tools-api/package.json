@@ -1,0 +1,21 @@
+{
+  "name": "@th0th/tools-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "npx tsx watch src/index.ts",
+    "start": "npx tsx src/index.ts",
+    "build": "bun build src/index.ts --outdir=dist --target=bun",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@th0th/core": "workspace:*",
+    "@th0th/shared": "workspace:*",
+    "elysia": "^1.2.25",
+    "@elysiajs/swagger": "^1.2.0",
+    "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/node": "^1.2.0"
+  }
+}
