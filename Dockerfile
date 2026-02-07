@@ -26,5 +26,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3333/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Comando para iniciar a API
-# Usa bun com o caminho completo do arquivo no contexto do monorepo
-CMD ["bun", "--cwd", "/app/apps/tools-api", "run", "src/index.ts"]
+# Roda o arquivo TypeScript diretamente com Bun do diretório raiz do monorepo
+CMD ["bun", "./apps/tools-api/src/index.ts"]
