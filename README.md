@@ -1,3 +1,5 @@
+<img src="https://i.imgur.com/5EJK9OF.png" alt="th0th" style="visibility: visible; max-width: 80%; display: block; margin: 0 auto;" />
+
 # th0th
 
 **Ancient knowledge keeper for modern code**
@@ -326,18 +328,6 @@ The script `./scripts/setup-local-first.sh` configures:
 - Vector DB: Local SQLite
 - Cost: $0
 
----
-
-## BEIR Benchmark
-
-```bash
-bun run bench:beir -- \
-  --datasetDir /path/to/beir/scifact \
-  --datasetName scifact \
-  --projectId beir-scifact \
-  --k 10 \
-  --maxQueries 300
-```
 ---
 
 ## License
