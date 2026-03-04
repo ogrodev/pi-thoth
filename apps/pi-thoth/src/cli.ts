@@ -172,10 +172,14 @@ async function cmdInit(opts: Record<string, string | boolean>): Promise<void> {
     { label: "Config file", ok: configExists() },
     {
       label: "Data directory",
-      ok: fs.existsSync(dataDir) && fs.accessSync(dataDir, fs.constants.W_OK) === undefined,
+      ok: (() => {
+        if (!fs.existsSync(dataDir)) {
+          try { fs.mkdirSync(dataDir, { recursive: true }); } catch { return false; }
+        }
+        try { fs.accessSync(dataDir, fs.constants.W_OK); return true; } catch { return false; }
+      })(),
     },
   ];
-
   for (const c of checks) {
     console.log(`      [${c.ok ? "OK" : "FAIL"}] ${c.label}`);
   }
@@ -186,8 +190,8 @@ async function cmdInit(opts: Record<string, string | boolean>): Promise<void> {
   if (allOk) {
     console.log("Setup complete.\n");
     console.log("Next steps:");
-    console.log('  Add to your editor config (e.g. opencode.json):');
-    console.log('    "mcpServers": { "th0th": { "command": ["bunx", "pi-thoth"] } }');
+    console.log("  Add to your editor MCP config:");
+    console.log('    { "mcpServers": { "th0th": { "command": ["bunx", "pi-thoth"] } } }');
     console.log(`\n  Config: ${getConfigPath()}`);
     console.log(`  Data:   ${dataDir}\n`);
   } else {
