@@ -207,23 +207,20 @@ echo -e "  ${BOLD}Config file:${NC}     ${CONFIG_FILE}"
 echo -e "  ${BOLD}Data directory:${NC}  ${DATA_DIR}"
 echo ""
 echo -e "  ${BOLD}To change provider:${NC}"
-echo -e "    npx th0th-config use mistral --api-key YOUR_KEY"
-echo -e "    npx th0th-config use openai --api-key YOUR_KEY"
+echo -e "    bunx pi-thoth-config use mistral --api-key YOUR_KEY"
+echo -e "    bunx pi-thoth-config use openai --api-key YOUR_KEY"
 echo ""
-echo -e "  ${BOLD}Next steps (from source):${NC}"
+echo -e "  ${BOLD}Next steps:${NC}"
 echo -e "    1. ${BLUE}bun install${NC}"
 echo -e "    2. ${BLUE}bun run build${NC}"
-echo -e "    3. ${BLUE}bun run start:api${NC}"
+echo -e "    3. ${BLUE}bunx pi-thoth-config init${NC}   (if not already done)"
 echo ""
-echo -e "  ${BOLD}Or use with OpenCode:${NC}"
-echo -e '    Add to ~/.config/opencode/opencode.json:'
-echo ""
+echo -e "  ${BOLD}Add to your editor MCP config:${NC}"
+echo -e ''
 echo -e '    {'
 echo -e '      "mcpServers": {'
 echo -e '        "th0th": {'
-echo -e '          "type": "local",'
-echo -e '          "command": ["npx", "@th0th/mcp-client"],'
-echo -e '          "enabled": true'
+echo -e '          "command": ["bunx", "pi-thoth"]'
 echo -e '        }'
 echo -e '      }'
 echo -e '    }'

@@ -1,107 +1,49 @@
 <img src="https://i.imgur.com/5EJK9OF.png" alt="th0th" style="visibility: visible; max-width: 60%; display: block; margin: 0 auto;" />
 
-# th0th
+# pi-thoth
 
-**Ancient knowledge keeper for modern code**
+**Semantic search, persistent memory, and context compression for AI assistants**
 
-Semantic search with 98% token reduction for AI assistants.
+Single-process MCP server. No separate API server. No Docker required.
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Clone and install
-git clone <repo-url>
-cd th0th
-bun install
+# 1. Setup — install Ollama, start it, pull model, create config
+bunx pi-thoth-config init
 
-# 2. Setup (100% offline with Ollama)
-./scripts/setup-local-first.sh
-
-# 3. Build and start
-bun run build
-bun run start:api
+# 2. Add to your editor MCP config
+#    "mcpServers": { "th0th": { "command": ["bunx", "pi-thoth"] } }
 ```
 
-Verify: `curl http://localhost:3333/health`
+That's it. The server starts on stdio, calls core directly.
 
 ---
 
-## Integration
+## Editor Integration
 
-### OpenCode (recommended)
-
-File: `~/.config/opencode/opencode.json`
-
-**Via MCP package:**
+### Oh My Pi
 
 ```json
 {
   "mcpServers": {
     "th0th": {
-      "type": "local",
-      "command": ["bunx", "@th0th-ai/mcp-client"],
-      "env": {
-        "TH0TH_API_URL": "http://localhost:3333"
-      },
+      "command": ["bunx", "pi-thoth"],
       "enabled": true
     }
   }
 }
 ```
 
-**Via Plugin:**
-
-```json
-{
-  "plugin": ["@th0th/opencode-plugin"]
-}
-```
-
-**From source (development):**
+### Any MCP-compatible editor
 
 ```json
 {
   "mcpServers": {
     "th0th": {
-      "type": "local",
-      "command": ["bun", "run", "/path/to/th0th/apps/mcp-client/src/index.ts"],
-      "enabled": true
-    }
-  }
-}
-```
-
-### VSCode / Antigravity
-
-Create `.vscode/mcp.json` in your workspace:
-
-```json
-{
-  "servers": {
-    "th0th": {
-      "command": "bunx",
-      "args": ["@th0th-ai/mcp-client"],
-      "env": {
-        "TH0TH_API_URL": "http://localhost:3333"
-      }
-    }
-  }
-}
-```
-
-Or run `./scripts/setup-vscode.sh` for automatic configuration.
-
-### Docker
-
-```json
-{
-  "mcpServers": {
-    "th0th": {
-      "type": "local",
-      "command": ["docker", "compose", "run", "--rm", "-i", "mcp"],
-      "enabled": true
+      "command": ["bunx", "pi-thoth"]
     }
   }
 }
@@ -109,109 +51,68 @@ Or run `./scripts/setup-vscode.sh` for automatic configuration.
 
 ---
 
-## Available Tools
+## Tools
 
 | Tool | Description |
 |------|-------------|
 | `th0th_index` | Index a project directory for semantic search |
-| `th0th_search` | Semantic + keyword search with filters |
-| `th0th_remember` | Store important information in persistent memory |
+| `th0th_index_status` | Check status of a background indexing job |
+| `th0th_search` | Hybrid vector + keyword search with RRF ranking |
+| `th0th_remember` | Store information in persistent memory (SQLite) |
 | `th0th_recall` | Search stored memories from previous sessions |
 | `th0th_compress` | Compress context (keeps structure, removes details) |
-| `th0th_optimized_context` | Search + compress in one call (max token efficiency) |
-| `th0th_analytics` | Usage patterns, cache performance, metrics |
-
----
-
-## REST API
-
-```bash
-# Development
-bun run dev:api
-
-# Production
-bun run start:api
-```
-
-Swagger docs: `http://localhost:3333/swagger`
-
-### Endpoints
-
-```bash
-# Index a project
-curl -X POST http://localhost:3333/api/v1/project/index \
-  -H "Content-Type: application/json" \
-  -d '{"projectPath": "/home/user/my-project", "projectId": "my-project"}'
-
-# Search
-curl -X POST http://localhost:3333/api/v1/search/project \
-  -H "Content-Type: application/json" \
-  -d '{"query": "authentication", "projectId": "my-project"}'
-
-# Store memory
-curl -X POST http://localhost:3333/api/v1/memory/store \
-  -H "Content-Type: application/json" \
-  -d '{"content": "Important decision...", "type": "decision"}'
-
-# Compress context
-curl -X POST http://localhost:3333/api/v1/context/compress \
-  -H "Content-Type: application/json" \
-  -d '{"content": "...", "strategy": "code_structure"}'
-```
+| `th0th_optimized_context` | Search + memory + compress in one call |
+| `th0th_analytics` | Usage patterns and cache performance metrics |
 
 ---
 
 ## Configuration
 
-Config file: `~/.config/th0th/config.json` (auto-created on first run)
+Config file: `~/.config/th0th/config.json` (created on first run)
 
-### Embedding Providers
+```bash
+bunx pi-thoth-config init                        # Ollama (local, default)
+bunx pi-thoth-config init --mistral your-key     # Mistral
+bunx pi-thoth-config init --openai your-key      # OpenAI
+bunx pi-thoth-config show                        # Print current config
+bunx pi-thoth-config set embedding.model bge-m3:latest
+bunx pi-thoth-config use ollama --model bge-m3:latest
+```
+
+### Embedding providers
 
 | Provider | Model | Cost | Quality |
 |----------|-------|------|---------|
-| **Ollama** (default) | nomic-embed-text, bge-m3 | Free | Good |
-| **Mistral** | mistral-embed, codestral-embed | $$ | Great |
-| **OpenAI** | text-embedding-3-small | $$ | Great |
-
-### Switch Provider
-
-```bash
-npx th0th-config init                          # Ollama (default)
-npx th0th-config init --mistral your-api-key   # Mistral
-npx th0th-config init --openai your-api-key    # OpenAI
-npx th0th-config show                          # Show current config
-```
+| **Ollama** (default) | nomic-embed-text | Free | Good |
+| **Mistral** | mistral-embed | Paid | Great |
+| **OpenAI** | text-embedding-3-small | Paid | Great |
 
 ---
 
-## Scripts
+## From Source
 
-| Command | Description |
-|---------|-------------|
-| `bun run build` | Build all packages |
-| `bun run dev` | Development (all apps) |
-| `bun run dev:api` | REST API with hot reload |
-| `bun run dev:mcp` | MCP server with watch |
-| `bun run start:api` | Start REST API |
-| `bun run start:mcp` | Start MCP server |
-| `bun run test` | Run tests |
-| `bun run lint` | Lint code |
-| `bun run type-check` | Type checking |
+```bash
+git clone <repo-url>
+cd th0th
+bun install
+./scripts/setup-local-first.sh   # Ollama + model + config
+bun run build
+```
 
 ---
 
 ## Architecture
 
 ```
-th0th/
-├── apps/
-│   ├── mcp-client/           # MCP Server (stdio)
-│   ├── tools-api/            # REST API (port 3333)
-│   └── opencode-plugin/      # OpenCode plugin
-├── packages/
-│   ├── core/                 # Business logic, search, embeddings, compression
-│   └── shared/               # Shared types & utilities
-└── scripts/
+Editor/agent (stdio)
+       |
+  apps/pi-thoth          Single-process MCP server + CLI
+       |
+  packages/core          Search, memory, compression, embeddings
+       |
+  packages/shared        Config, types, utilities
+       |
+   ~/.rlm/*.db           SQLite databases (auto-created)
 ```
 
 | Component | Description |
@@ -221,6 +122,18 @@ th0th/
 | **Compression** | Rule-based code structure extraction (70-98% reduction) |
 | **Memory** | Persistent SQLite storage across sessions |
 | **Cache** | Multi-level L1/L2 with TTL |
+
+---
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `bun run build` | Build all packages |
+| `bun run dev:mcp` | Run pi-thoth with hot reload |
+| `bun run start` | Start pi-thoth MCP server |
+| `bun run test` | Run tests |
+| `bun run type-check` | Type checking |
 
 ---
 

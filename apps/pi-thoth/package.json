@@ -1,12 +1,11 @@
 {
-  "name": "@th0th/mcp-client",
+  "name": "pi-thoth",
   "version": "1.0.2",
-  "description": "th0th MCP server - Semantic code search, memory, and context compression via Model Context Protocol",
+  "description": "Semantic search, memory, and compression tools for Pi — single-process MCP server",
   "type": "module",
-  "main": "dist/index.js",
   "bin": {
-    "th0th": "dist/index.js",
-    "th0th-config": "dist/config-cli.js"
+    "pi-thoth": "dist/index.js",
+    "pi-thoth-config": "dist/cli.js"
   },
   "files": [
     "dist"
@@ -14,10 +13,11 @@
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
-    "build": "bun build src/index.ts src/config-cli.ts --outdir=dist --target=bun",
+    "build": "bun build src/index.ts src/cli.ts --outdir=dist --target=bun",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@th0th/core": "workspace:*",
     "@th0th/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
@@ -26,8 +26,20 @@
     "typescript": "^5.8.3"
   },
   "license": "MIT",
+  "engines": {
+    "bun": ">=1.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/S1LV4/th0th"
-  }
+  },
+  "keywords": [
+    "mcp",
+    "semantic-search",
+    "memory",
+    "compression",
+    "ai",
+    "ollama",
+    "context"
+  ]
 }
