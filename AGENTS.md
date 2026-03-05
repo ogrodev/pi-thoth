@@ -9,8 +9,7 @@ Architecture: single-process MCP server (`apps/pi-thoth`) that calls `@th0th/cor
 ## Architecture & Data Flow
 
 ```
-Editor/agent (stdio) → apps/pi-thoth → @th0th/core → SQLite (~/.rlm/)
-```
+Editor/agent (stdio) → apps/pi-thoth → @th0th/core → SQLite (<project>/.th0th/data/)
 
 ### Core architecture contract (`packages/core/src`)
 - `tools/` — thin input schema + delegation (MCP-facing)
@@ -46,18 +45,19 @@ bun run type-check
 bun run test
 ```
 
-Run MCP server locally:
-
-```bash
-bun apps/pi-thoth/src/index.ts
-```
-
 Setup:
 
 ```bash
-bunx pi-thoth-config init     # install/start Ollama, pull model, create config
-bunx pi-thoth-config show     # print current config
+bunx pi-thoth-config init              # per-project: creates .th0th/config.json + .th0th/data/
+bunx pi-thoth-config init --global     # global template: ~/.config/th0th/config.json
+bunx pi-thoth-config show              # print project config (falls back to global)
 bunx pi-thoth-config use mistral --api-key YOUR_KEY
+```
+
+Run MCP server locally (must be in a project with `.th0th/config.json`):
+
+```bash
+bun apps/pi-thoth/src/index.ts
 ```
 
 ## Code Conventions & Common Patterns

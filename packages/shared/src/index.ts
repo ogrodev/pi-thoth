@@ -16,6 +16,5 @@ export * from "./utils/index.js";
 export {
   Config,
   config,
-  defaultConfig,
   type ServerConfig,
 } from "./config/index.js";

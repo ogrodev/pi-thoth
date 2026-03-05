@@ -11,15 +11,16 @@ Single-process MCP server. No separate API server. No Docker required.
 ## Quick Start
 
 ```bash
-# 1. Setup — install Ollama, start it, pull model, create config
+# 1. Per-project setup — run inside your project directory
+cd /path/to/my-project
 bunx pi-thoth-config init
 
 # 2. Add to your editor MCP config
 #    "mcpServers": { "th0th": { "command": ["bunx", "pi-thoth"] } }
 ```
 
-That's it. The server starts on stdio, calls core directly.
-
+The server reads `.th0th/config.json` from the directory it is started in.
+Each project keeps its own databases under `.th0th/data/` (gitignored automatically).
 ---
 
 ## Editor Integration
@@ -68,15 +69,24 @@ That's it. The server starts on stdio, calls core directly.
 
 ## Configuration
 
-Config file: `~/.config/th0th/config.json` (created on first run)
+pi-thoth uses **per-project** configuration. Run `init` once in each project:
 
 ```bash
 bunx pi-thoth-config init                        # Ollama (local, default)
 bunx pi-thoth-config init --mistral your-key     # Mistral
 bunx pi-thoth-config init --openai your-key      # OpenAI
-bunx pi-thoth-config show                        # Print current config
+bunx pi-thoth-config show                        # Print active config
 bunx pi-thoth-config set embedding.model bge-m3:latest
 bunx pi-thoth-config use ollama --model bge-m3:latest
+```
+
+Config file: `.th0th/config.json` (project root, gitignored)
+Data dir:    `.th0th/data/` (SQLite databases, gitignored)
+
+To create a **global template** used as default for new projects:
+
+```bash
+bunx pi-thoth-config init --global  # writes ~/.config/th0th/config.json
 ```
 
 ### Embedding providers
@@ -112,7 +122,8 @@ Editor/agent (stdio)
        |
   packages/shared        Config, types, utilities
        |
-   ~/.rlm/*.db           SQLite databases (auto-created)
+  <project>/.th0th/      Per-project config + SQLite databases
+        data/*.db        (gitignored, created by `pi-thoth-config init`)
 ```
 
 | Component | Description |

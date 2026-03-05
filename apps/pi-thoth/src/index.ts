@@ -4,15 +4,24 @@
  *
  * Wires @th0th/core tool handlers directly into an MCP stdio server.
  * No HTTP, no separate tools-api process required.
+ *
+ * Requires a per-project .th0th/config.json — refuses to start without one.
+ * Run `pi-thoth-config init` in the project directory to create it.
  */
 
+import fs from "fs";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { configExists, initConfig, getConfigForEnv } from "@th0th/shared/config";
+import {
+  projectConfigExists,
+  getProjectDataDir,
+  loadProjectConfig,
+  configToEnv,
+} from "@th0th/shared/config";
 import { getTools, getTool } from "./tool-registry.js";
 
 // ---------------------------------------------------------------------------
@@ -26,20 +35,30 @@ if (typeof Bun === "undefined") {
 }
 
 // ---------------------------------------------------------------------------
-// Auto-configure on first run
+// Per-project config guard — refuse to start without .th0th/config.json
 // ---------------------------------------------------------------------------
-if (!configExists()) {
-  initConfig();
-  process.stderr.write(`
-[pi-thoth] Initialized with default configuration.
-[pi-thoth] Config: ~/.config/th0th/config.json
-[pi-thoth] Provider: Ollama (local, free)
-[pi-thoth] To change: bunx pi-thoth-config use mistral --api-key YOUR_KEY
-`);
+const projectRoot = process.cwd();
+
+if (!projectConfigExists(projectRoot)) {
+  process.stderr.write(
+    `[pi-thoth] No .th0th/config.json found in ${projectRoot}\n` +
+      `[pi-thoth] Run \`pi-thoth-config init\` in your project directory first.\n`,
+  );
+  process.exit(1);
 }
 
-// Apply th0th config to process environment so core services pick it up.
-const envOverrides = getConfigForEnv();
+// Set TH0TH_DATA_DIR BEFORE any lazy Config.get() call resolves paths.
+const projectDataDir = getProjectDataDir(projectRoot);
+process.env.TH0TH_DATA_DIR = projectDataDir;
+
+// Ensure the data directory exists (may have been deleted since init).
+if (!fs.existsSync(projectDataDir)) {
+  fs.mkdirSync(projectDataDir, { recursive: true });
+}
+
+// Load project config and propagate embedding/logging settings as env vars.
+const projectConfig = loadProjectConfig(projectRoot);
+const envOverrides = configToEnv(projectConfig);
 for (const [key, value] of Object.entries(envOverrides)) {
   process.env[key] = value;
 }
@@ -131,7 +150,11 @@ class PiThothServer {
 
   async start(): Promise<void> {
     await this.server.connect(this.transport);
-    process.stderr.write("[pi-thoth] MCP server running on stdio\n");
+    process.stderr.write(
+      `[pi-thoth] MCP server running on stdio\n` +
+        `[pi-thoth] Project: ${projectRoot}\n` +
+        `[pi-thoth] Data:    ${projectDataDir}\n`,
+    );
   }
 
   async close(): Promise<void> {

@@ -92,122 +92,146 @@ export interface ServerConfig {
 }
 
 /**
- * Get global data directory
- * Creates ~/.rlm/ directory for all projects
+ * Get data directory.
+ * Reads TH0TH_DATA_DIR env var first; falls back to ~/.rlm.
+ * Called lazily so env overrides set before first config.get() are respected.
  */
-function getGlobalDataDir(): string {
-  const homeDir = os.homedir();
-  const dataDir = path.join(homeDir, ".rlm");
-  return dataDir;
+function getDataDir(): string {
+  return process.env.TH0TH_DATA_DIR || path.join(os.homedir(), ".rlm");
+}
+
+let _defaultConfig: ServerConfig | null = null;
+
+/**
+ * Default Configuration — lazy-initialized so TH0TH_DATA_DIR is
+ * read after it has been set by the MCP server startup guard.
+ */
+function getDefaultConfig(): ServerConfig {
+  if (!_defaultConfig) {
+    const dataDir = getDataDir();
+    _defaultConfig = {
+      name: "th0th-server",
+      version: "1.0.0",
+
+      dataDir,
+
+      cache: {
+        l1: {
+          maxSize: 100 * 1024 * 1024, // 100 MB
+          defaultTTL: 300, // 5 minutes
+        },
+        l2: {
+          dbPath: path.join(dataDir, "cache.db"),
+          maxSize: 500 * 1024 * 1024, // 500 MB
+          defaultTTL: 3600, // 1 hour
+        },
+        embedding: {
+          dbPath: path.join(dataDir, "embedding-cache.db"),
+          maxAgeHours: 168, // 7 days
+        },
+      },
+
+      vectorStore: {
+        type: "sqlite",
+        dbPath: path.join(dataDir, "vector-store.db"),
+        collectionName: "rlm_memories",
+        embeddingModel: "default",
+      },
+
+      keywordSearch: {
+        dbPath: path.join(dataDir, "keyword-search.db"),
+        ftsVersion: "fts5",
+      },
+
+      compression: {
+        defaultStrategy: "code_structure",
+        minTokensForCompression: 100,
+        targetCompressionRatio: 0.7, // 70% reduction
+        llm: {
+          enabled: process.env.RLM_LLM_ENABLED === "true",
+          baseUrl: process.env.RLM_LLM_BASE_URL || "https://api.openai.com/v1",
+          apiKey: process.env.RLM_LLM_API_KEY || "",
+          model: process.env.RLM_LLM_MODEL || "gpt-4o-mini",
+          temperature: Number(process.env.RLM_LLM_TEMPERATURE || "0.2"),
+          maxOutputTokens: Number(process.env.RLM_LLM_MAX_OUTPUT_TOKENS || "800"),
+          timeoutMs: Number(process.env.RLM_LLM_TIMEOUT_MS || "20000"),
+          prompt: process.env.RLM_LLM_PROMPT || undefined,
+        },
+      },
+
+      rateLimit: {
+        requestsPerMinute: 60,
+        tokensPerMinute: 100000,
+      },
+
+      security: {
+        maxInputLength: 100000,
+        sanitizeInputs: true,
+        maxIndexSize: 100000, // max files to index
+        maxFileSize: 1024 * 1024, // 1MB per file
+        allowedExtensions: [
+          ".ts",
+          ".js",
+          ".tsx",
+          ".jsx",
+          ".py",
+          ".java",
+          ".go",
+          ".rs",
+          ".cpp",
+          ".c",
+          ".h",
+          ".md",
+          ".json",
+          ".yaml",
+          ".yml",
+        ],
+        excludePatterns: [
+          "node_modules/**",
+          ".git/**",
+          "dist/**",
+          "build/**",
+          ".next/**",
+          "coverage/**",
+          "*.min.js",
+          "*.min.css",
+        ],
+      },
+
+      logging: {
+        level: (process.env.LOG_LEVEL as "debug" | "info" | "warn" | "error") || "info",
+        enableMetrics: process.env.ENABLE_METRICS === "true",
+      },
+    };
+  }
+  return _defaultConfig;
 }
 
 /**
- * Default Configuration
- */
-export const defaultConfig: ServerConfig = {
-  name: "th0th-server",
-  version: "1.0.0",
-
-  dataDir: getGlobalDataDir(),
-
-  cache: {
-    l1: {
-      maxSize: 100 * 1024 * 1024, // 100 MB
-      defaultTTL: 300, // 5 minutes
-    },
-    l2: {
-      dbPath: path.join(getGlobalDataDir(), "cache.db"),
-      maxSize: 500 * 1024 * 1024, // 500 MB
-      defaultTTL: 3600, // 1 hour
-    },
-    embedding: {
-      dbPath: path.join(getGlobalDataDir(), "embedding-cache.db"),
-      maxAgeHours: 168, // 7 days
-    },
-  },
-
-  vectorStore: {
-    type: "sqlite",
-    dbPath: path.join(getGlobalDataDir(), "vector-store.db"),
-    collectionName: "rlm_memories",
-    embeddingModel: "default",
-  },
-
-  keywordSearch: {
-    dbPath: path.join(getGlobalDataDir(), "keyword-search.db"),
-    ftsVersion: "fts5",
-  },
-
-  compression: {
-    defaultStrategy: "code_structure",
-    minTokensForCompression: 100,
-    targetCompressionRatio: 0.7, // 70% reduction
-    llm: {
-      enabled: process.env.RLM_LLM_ENABLED === "true",
-      baseUrl: process.env.RLM_LLM_BASE_URL || "https://api.openai.com/v1",
-      apiKey: process.env.RLM_LLM_API_KEY || "",
-      model: process.env.RLM_LLM_MODEL || "gpt-4o-mini",
-      temperature: Number(process.env.RLM_LLM_TEMPERATURE || "0.2"),
-      maxOutputTokens: Number(process.env.RLM_LLM_MAX_OUTPUT_TOKENS || "800"),
-      timeoutMs: Number(process.env.RLM_LLM_TIMEOUT_MS || "20000"),
-      prompt: process.env.RLM_LLM_PROMPT || undefined,
-    },
-  },
-
-  rateLimit: {
-    requestsPerMinute: 60,
-    tokensPerMinute: 100000,
-  },
-
-  security: {
-    maxInputLength: 100000,
-    sanitizeInputs: true,
-    maxIndexSize: 100000, // max files to index
-    maxFileSize: 1024 * 1024, // 1MB per file
-    allowedExtensions: [
-      ".ts",
-      ".js",
-      ".tsx",
-      ".jsx",
-      ".py",
-      ".java",
-      ".go",
-      ".rs",
-      ".cpp",
-      ".c",
-      ".h",
-      ".md",
-      ".json",
-      ".yaml",
-      ".yml",
-    ],
-    excludePatterns: [
-      "node_modules/**",
-      ".git/**",
-      "dist/**",
-      "build/**",
-      ".next/**",
-      "coverage/**",
-      "*.min.js",
-      "*.min.css",
-    ],
-  },
-
-  logging: {
-    level: (process.env.LOG_LEVEL as any) || "info",
-    enableMetrics: process.env.ENABLE_METRICS === "true",
-  },
-};
-
-/**
  * Configuration Manager
+ *
+ * Lazy by default — paths are not resolved until first get() call,
+ * which means TH0TH_DATA_DIR set by the MCP server startup guard
+ * is always picked up correctly.
  */
 export class Config {
-  private config: ServerConfig;
+  private _config: ServerConfig | null = null;
 
   constructor(overrides?: Partial<ServerConfig>) {
-    this.config = this.mergeConfig(defaultConfig, overrides);
-    this.validate();
+    if (overrides) {
+      // Eagerly init only when explicit overrides are provided.
+      this._config = this.mergeConfig(getDefaultConfig(), overrides);
+      this.validate();
+    }
+    // Otherwise: lazy — computed on first get().
+  }
+
+  private ensureInit(): ServerConfig {
+    if (!this._config) {
+      this._config = this.mergeConfig(getDefaultConfig(), undefined);
+      this.validate();
+    }
+    return this._config;
   }
 
   /**
@@ -243,9 +267,10 @@ export class Config {
    * Validate configuration
    */
   private validate(): void {
+    const cfg = this._config!;
     if (
-      this.config.compression.targetCompressionRatio < 0 ||
-      this.config.compression.targetCompressionRatio > 1
+      cfg.compression.targetCompressionRatio < 0 ||
+      cfg.compression.targetCompressionRatio > 1
     ) {
       throw new Error("targetCompressionRatio must be between 0 and 1");
     }
@@ -255,28 +280,28 @@ export class Config {
    * Get configuration value
    */
   get<K extends keyof ServerConfig>(key: K): ServerConfig[K] {
-    return this.config[key];
+    return this.ensureInit()[key];
   }
 
   /**
    * Get nested configuration value
    */
   getNested(path: string): any {
-    return path.split(".").reduce((obj: any, key) => obj?.[key], this.config);
+    return path.split(".").reduce((obj: any, key) => obj?.[key], this.ensureInit());
   }
 
   /**
    * Get all configuration
    */
   getAll(): ServerConfig {
-    return { ...this.config };
+    return { ...this.ensureInit() };
   }
 
   /**
    * Update configuration (runtime)
    */
   set<K extends keyof ServerConfig>(key: K, value: ServerConfig[K]): void {
-    this.config[key] = value;
+    this.ensureInit()[key] = value;
   }
 }
 
@@ -299,4 +324,12 @@ export {
   saveConfig,
   initConfig,
   getConfigForEnv,
+  getProjectConfigDir,
+  getProjectConfigPath,
+  getProjectDataDir,
+  projectConfigExists,
+  loadProjectConfig,
+  saveProjectConfig,
+  initProjectConfig,
+  configToEnv,
 } from "./config-loader";
