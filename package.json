@@ -1,7 +1,6 @@
 {
   "name": "th0th",
   "version": "0.1.0",
-  "private": true,
   "description": "th0th - Ancient knowledge keeper for modern code. Semantic search with 98% token reduction",
   "workspaces": [
     "packages/*",
